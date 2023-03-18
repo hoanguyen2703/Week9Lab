@@ -39,29 +39,29 @@ public class UserDB {
 //insert  one user
 //pass the whole user object
     public void insert(User user) throws Exception {
-       EntityManager em = DBUtil.getEmFactory().createEntityManager();
-       EntityTransaction trans = em.getTransaction();
-
+        EntityManager em = DBUtil.getEmFactory().createEntityManager();
+        EntityTransaction trans = em.getTransaction();
+        
         try {
             trans.begin();
             em.persist(user);
             trans.commit();
-        }catch (Exception ex){
+        } catch (Exception ex) {
             trans.rollback();
         } finally {
             em.close();
         }
     }
 
-    public void update(User user) throws Exception {
-       EntityManager em = DBUtil.getEmFactory().createEntityManager();
-       EntityTransaction trans = em.getTransaction();
-
+      public void update(User user) throws Exception {
+        EntityManager em = DBUtil.getEmFactory().createEntityManager();
+        EntityTransaction trans = em.getTransaction();
+        
         try {
             trans.begin();
             em.merge(user);
             trans.commit();
-        }catch (Exception ex){
+        } catch (Exception ex) {
             trans.rollback();
         } finally {
             em.close();
@@ -69,14 +69,14 @@ public class UserDB {
     }
 
     public void delete(User user) throws Exception {
-          EntityManager em = DBUtil.getEmFactory().createEntityManager();
-       EntityTransaction trans = em.getTransaction();
-
+        EntityManager em = DBUtil.getEmFactory().createEntityManager();
+        EntityTransaction trans = em.getTransaction();
+        
         try {
             trans.begin();
             em.remove(em.merge(user));
             trans.commit();
-        }catch (Exception ex){
+        } catch (Exception ex) {
             trans.rollback();
         } finally {
             em.close();

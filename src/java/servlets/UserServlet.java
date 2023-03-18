@@ -17,126 +17,104 @@ public class UserServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        HttpSession session = request.getSession();
-        //servlet-service-userdb
+        
         UserService us = new UserService();
-        RoleService rs = new RoleService();
+        HttpSession session = request.getSession(false);
         String action = request.getParameter("action");
-
+        
         try {
+            if (action != null && !action.equals("")) {
+                String email = request.getParameter("key").replaceAll(" ", "\\+");
+                switch (action) {
+                    case "edit":
+                        User user = us.get(email);
+                        session.setAttribute("selecteduser", user);
+                        break;
+                    case "delete":
+                         us.delete(email);
+                }
+            } 
+            session = request.getSession();
             List<User> users = us.getAll();
-            request.setAttribute("users", users);
-            if (users.isEmpty()) {
-                request.setAttribute("message", "empty");
-            }
-        } catch (Exception ex) {
+            if (users.isEmpty()) session.setAttribute("selecteduser", null);
+            session.setAttribute("users", users);
+        } 
+        catch (Exception ex) {
             Logger.getLogger(UserServlet.class.getName()).log(Level.SEVERE, null, ex);
             request.setAttribute("message", "error");
         }
-        if (action != null) {
-            if (action.equals("edit")) {
-                try {
-                    String email = request.getParameter("email");
-                    String role_name = request.getParameter("role");
-                    User user = us.get(email);
-                    request.setAttribute("email", email);
-                    request.setAttribute("selectedUser", user);
-                    request.setAttribute("message", "edit");
-                    
-                } catch (Exception ex) {
-                    Logger.getLogger(UserServlet.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            } else if (action.equals("delete")) {
-                try {
-                    String email = request.getParameter("email");
-                    us.delete(email);
-                    request.setAttribute("message", "delete");
-                    response.sendRedirect("/");
-                    return;
-                } catch (Exception ex) {
-                    Logger.getLogger(UserServlet.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            }
-        }
-        getServletContext().getRequestDispatcher("/WEB-INF/users.jsp").forward(request, response);
+
+        getServletContext().getRequestDispatcher("/WEB-INF/users.jsp" )
+            .forward(request, response);         
     }
 
-   
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-       UserService us = new UserService();
-        RoleService rs = new RoleService();
 
+        UserService us = new UserService();
+        HttpSession session = request.getSession();
+        String action = request.getParameter("submit");
+        
+        if(action.equals("Cancel")) {
+            session.setAttribute("selecteduser", null);
+            getServletContext().getRequestDispatcher("/WEB-INF/users.jsp" )
+                .forward(request, response);  
+            return;
+        }
+        
         String email = request.getParameter("email");
-        String first = request.getParameter("first");
-        String last = request.getParameter("last");
-        String pw = request.getParameter("pw");
-        String id = request.getParameter("role"); //name
-        int user_role_id = 0;
-
-        String action = request.getParameter("action");
+        String firstName = request.getParameter("firstname");
+        String lastName = request.getParameter("lastname");
+        String password = request.getParameter("password");
+        String roleId = request.getParameter("role");
+        String[] params = {email,firstName,lastName,password,roleId};
 
         try {
-            List<User> users = us.getAll();
-            request.setAttribute("users", users);
-            if (email == null || email.equals("") || first == null || first.equals("") || last == null || last.equals("")
-                    || pw == null || pw.equals("")) {
-                request.setAttribute("mes", "All fields are required");
-                if (users.isEmpty()) {
-                    request.setAttribute("message", "empty");
+            Boolean formMessageSet = false;
+            for (int i = 0; i < params.length; i++) { 
+                if(params[i].equals("") || params[i] == null){
+                    request.setAttribute("formmessage", "All fields are required");
+                    formMessageSet = true;
                 }
-                getServletContext().getRequestDispatcher("/WEB-INF/users.jsp").forward(request, response);
+            }
+            
+            List<User> users = us.getAll();
+            for (int i = 0; i < users.size(); i++) {
+                if (action.equals("Add user") && users.get(i).getEmail().equals(email)) {
+                    request.setAttribute("formmessage", "Email is in use"); 
+                    formMessageSet = true;
+                }
+            }
+            
+            if (formMessageSet) {
+                request.setAttribute("email", email);
+                request.setAttribute("firstname", firstName);
+                request.setAttribute("lastname", lastName);
+                getServletContext().getRequestDispatcher("/WEB-INF/users.jsp" )
+                    .forward(request, response); 
                 return;
             }
-
-            if (action != null) {
-                switch (action) {
-                    case "add":
-                        if (id.equals("1")) {
-                            user_role_id = 1;
-                        } else {
-                            user_role_id = 2;
-                        }
-                        //check the email                     
-                        for (int i = 0; i < users.size(); i++) {
-                            if (email.equals(users.get(i).getEmail())) {
-                                request.setAttribute("mes", "Error. Email is already taken");
-                                getServletContext().getRequestDispatcher("/WEB-INF/users.jsp").forward(request, response);
-                            }
-                        }
-                        us.insert(email, first, last, pw, rs.get(user_role_id));
-                        request.setAttribute("message", "add");
-                        break;
-                    case "update":
-                        if (id.equals("system admin")) {
-                            user_role_id =1 ;
-                        } else{
-                           user_role_id = 2;
-                        }
-                        
-                        us.update(email, first, last, pw, rs.get(user_role_id));
-                        request.setAttribute("message", "update");
-                        break;
-                }
+            switch (action) {
+                case "Add user":
+                    us.insert(email, firstName, lastName, password, Integer.parseInt(roleId));
+                    break;
+                case "Update":
+                    us.update(email, firstName, lastName, password, Integer.parseInt(roleId));
+                    session.setAttribute("selecteduser", null);
             }
-        } catch (Exception ex) {
-            Logger.getLogger(UserServlet.class
-                    .getName()).log(Level.SEVERE, null, ex);
+            users = us.getAll();
+            session.setAttribute("users", users);
+            getServletContext().getRequestDispatcher("/WEB-INF/users.jsp" )
+                .forward(request, response); 
+        } 
+        catch (Exception ex) {
+            Logger.getLogger(UserServlet.class.getName()).log(Level.SEVERE, null, ex);
             request.setAttribute("message", "error");
         }
 
-        try {
-            List<User> users = us.getAll();
-            request.setAttribute("users", users);
 
-        } catch (Exception ex) {
-            Logger.getLogger(UserServlet.class
-                    .getName()).log(Level.SEVERE, null, ex);
-            request.setAttribute("message", "error");
-        }
-        getServletContext().getRequestDispatcher("/WEB-INF/users.jsp").forward(request, response);
+
     }
-
 
 }
