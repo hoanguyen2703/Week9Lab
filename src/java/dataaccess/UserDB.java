@@ -12,36 +12,16 @@ import models.User;
 public class UserDB {
     //get all user?
     public List<User> getAll() throws Exception {
-        List<User> users = new ArrayList<>();
-        //retrieve the connection pool-using singleton pattern(cannot call a constructor directly
-        ConnectionPool cp = ConnectionPool.getInstance();
-        Connection con = cp.getConnection();
-        PreparedStatement ps = null;
-        ResultSet rs = null;
-
-        String sql = "SELECT email, first_name, last_name, password, role_id, role_name FROM user, role WHERE role_id = role";
+        EntityManager em = DBUtil.getEmFactory().createEntityManager();
 
         try {
-            ps = con.prepareStatement(sql);
-            rs = ps.executeQuery();
-            while (rs.next()) {
-                String email = rs.getString(1);
-                String first = rs.getString(2);
-                String last = rs.getString(3);
-                String password = rs.getString(4);
-                int id = rs.getInt(5);
-                String name = rs.getString(6);
-                Role r = new Role(id, name);
-                User user = new User(email, first, last, password, r);
-                users.add(user);
-            }
+            List<User> users = em.createNamedQuery("User.findAll", User.class).getResultList();
+            return users;
         } finally {
-            DBUtil.closeResultSet(rs);
-            DBUtil.closePreparedStatement(ps);
-            cp.freeConnection(con);
+            em.close();
         }
 
-        return users;
+        
     }
 //get one particular user for specific email
 

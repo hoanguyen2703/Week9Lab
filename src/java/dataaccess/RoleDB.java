@@ -12,31 +12,14 @@ import models.Role;
 public class RoleDB {
     //returns list
     public List<Role> getAll() throws Exception {
-        List<Role> roles = new ArrayList<>();
-        //retrieve the connection pool-using singleton pattern(cannot call a constructor directly
-        ConnectionPool cp = ConnectionPool.getInstance();
-        Connection con = cp.getConnection();
-        PreparedStatement ps = null;
-        ResultSet rs = null;
-
-        String sql = "SELECT role_id, role_name FROM role";
+        EntityManager em = DBUtil.getEmFactory().createEntityManager();
 
         try {
-            ps = con.prepareStatement(sql);
-            rs = ps.executeQuery();
-            while (rs.next()) {
-                int id = rs.getInt(1);
-                String name = rs.getString(2);
-                Role role = new Role(id, name);
-                roles.add(role);
-            }
+            List<Role> roles = em.createNamedQuery("Role.findAll", Role.class).getResultList();
+            return roles;
         } finally {
-            DBUtil.closeResultSet(rs);
-            DBUtil.closePreparedStatement(ps);
-            cp.freeConnection(con);
+            em.close();
         }
-
-        return roles;
     }
 
     public Role get(int id) throws Exception {
