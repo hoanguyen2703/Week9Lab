@@ -2,6 +2,7 @@ package dataaccess;
 
 import java.sql.*;
 import java.util.*;
+import javax.persistence.EntityManager;
 import models.Role;
 import models.User;
 /**
@@ -45,33 +46,14 @@ public class UserDB {
 //get one particular user for specific email
 
     public User get(String email) throws Exception {
-        User user = null;
-        ConnectionPool cp = ConnectionPool.getInstance();
-        Connection con = cp.getConnection();
-        PreparedStatement ps = null;
-        ResultSet rs = null;
-        String sql = "SELECT first_name, last_name, password, role_id, role_name FROM user u, role r WHERE email=? and r.role_id= u.role";
-
+        EntityManager em = DBUtil.getEmFactory().createEntityManager();
         try {
-            ps = con.prepareStatement(sql);
-            ps.setString(1, email);
-            rs = ps.executeQuery();
-            if (rs.next()) {
-                String first = rs.getString(1);
-                String last = rs.getString(2);
-                String pw = rs.getString(3);
-                int id = rs.getInt(4); 
-                String name = rs.getString(5);
-                Role r = new Role(id, name);
-                user = new User(email, first, last, pw, r);
-             
-            }
+           User user = em.find(User.class, email);
+           return user;
         } finally {
-            DBUtil.closeResultSet(rs);
-            DBUtil.closePreparedStatement(ps);
-            cp.freeConnection(con);
+           em.close();
         }
-        return user;
+        
     }
 
     

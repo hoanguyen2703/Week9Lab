@@ -2,6 +2,7 @@ package dataaccess;
 
 import java.sql.*;
 import java.util.*;
+import javax.persistence.EntityManager;
 import models.Role;
 
 /**
@@ -39,28 +40,15 @@ public class RoleDB {
     }
 
     public Role get(int id) throws Exception {
-        Role role = null;
-        ConnectionPool cp = ConnectionPool.getInstance();
-        Connection con = cp.getConnection();
-        PreparedStatement ps = null;
-        ResultSet rs = null;
-        String sql = "SELECT role_id, role_name FROM role WHERE role_id=?";
+        EntityManager em = DBUtil.getEmFactory().createEntityManager();
+        
 
         try {
-            ps = con.prepareStatement(sql);
-            ps.setInt(1, id);
-            rs = ps.executeQuery();
-            if (rs.next()) {
-                int r_id = rs.getInt(1);
-                String r_name = rs.getString(2);
-                role = new Role(r_id, r_name);
-            }
+           Role role = em.find(Role.class, id);
+           return role;
         } finally {
-            DBUtil.closeResultSet(rs);
-            DBUtil.closePreparedStatement(ps);
-            cp.freeConnection(con);
+           em.close();
         }
 
-        return role;
     }
 }
